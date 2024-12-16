@@ -3,15 +3,16 @@ package auth_test
 import (
 	"bytes"
 	"discount-system-backend/internal/auth"
+	"discount-system-backend/internal/database"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func TestLoginHTTPRequest(t *testing.T) {
+func TestLoginSuccessToken(t *testing.T) {
 	reqBody, _ := json.Marshal(map[string]string{
-		"username": "test",
+		"name": "test",
 		"password": "password",
 	})
 
@@ -37,40 +38,39 @@ func TestLoginHTTPRequest(t *testing.T) {
 		t.Fatalf("failed to unmarshal response body into User struct: %v", err)
 	}
 
-	// Check if the response contains a token
 	if response.Token == "" {
 		t.Errorf("expected response token but got empty value")
 	}
 }
 
-func TestLoginHandler(t *testing.T) {
+func TestLoginHandler(t *testing.T) { // change and divide this test in more tests
 	tests := []struct {
 		name           string
-		input          auth.User
+		input          database.User
 		expectedStatus int
 		expectedBody   string
 	}{
 		{
 			name:           "Valid Credentials",
-			input:          auth.User{Username: "test", Password: "password"},
+			input:          database.User{Name: "test", Password: "password"},
 			expectedStatus: http.StatusOK,
 			expectedBody:   `{"token": "fake-jwt-token"}`,
 		},
 		{
 			name:           "Invalid Username",
-			input:          auth.User{Username: "wrong", Password: "password"},
+			input:          database.User{Name: "wrong", Password: "password"},
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody:   "Invalid credentials\n",
 		},
 		{
 			name:           "Invalid Password",
-			input:          auth.User{Username: "test", Password: "wrong"},
+			input:          database.User{Name: "test", Password: "wrong"},
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody:   "Invalid credentials\n",
 		},
 		{
 			name:           "Invalid JSON",
-			input:          auth.User{},
+			input:          database.User{},
 			expectedStatus: http.StatusBadRequest,
 			expectedBody:   "Invalid input\n",
 		},

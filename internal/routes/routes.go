@@ -15,6 +15,7 @@ func Routes() *http.ServeMux {
  mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /login", auth.LoginHandler)
+	mux.HandleFunc("POST /register", auth.RegisterHandler)
 	mux.HandleFunc("/ping", ping)
 
 	return mux
