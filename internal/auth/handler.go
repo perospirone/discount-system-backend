@@ -4,6 +4,7 @@ import (
 	"discount-system-backend/internal/database"
 	"discount-system-backend/pkg/jwt"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -17,8 +18,8 @@ type ResponseToken struct {
 }
 
 type responseTokenAndID struct {
-	Token string `json:"token"`
-	UserID uint `json:"user_id"`
+	Token  string `json:"token"`
+	UserID uint   `json:"user_id"`
 }
 
 type responseError struct {
@@ -152,6 +153,11 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	// Store the hashed password instead of plain text
 	body.Password = string(hashedPassword)
 
+	if body.AffiliateUserID != 0 {
+		body.HasDiscount = true
+		go giveDiscountForUserByID(body.AffiliateUserID)
+	}
+
 	// Save the new user to the database
 	result = db.Create(&body)
 	if result.Error != nil {
@@ -172,4 +178,23 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	response := responseTokenAndID{Token: token, UserID: body.ID}
 	json.NewEncoder(w).Encode(response)
+}
+
+func giveDiscountForUserByID(id uint) {
+	var db = database.Connection()
+
+	var user database.User
+	// Find the user by ID
+	if err := db.First(&user, id).Error; err != nil {
+		fmt.Println("User not found or database error:", err)
+		return
+	}
+
+	// Update the HasDiscount field to true
+	if err := db.Model(&user).Update("has_discount", true).Error; err != nil {
+		fmt.Println("Failed to update HasDiscount:", err)
+		return
+	}
+
+	fmt.Printf("Discount given to user: %v\n", user)
 }
